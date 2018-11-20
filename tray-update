@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+
+from subprocess import call
+
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
+
+SUBPROCESS_CALL = [" ".join(["""gnome-terminal --title "apt-update" --""",
+    """bash -c "cd;""", """sudo apt update;""", """apt-get -s dist-upgrade |""",
+    """grep --color=auto "^Inst.*\-security.*";""", """exec $SHELL";"""])]
+
+# xdg standard icons:
+# package-x-generic
+# system-software-update
+# software-update-available
+# software-update-urgent
+
+#Gtk.Settings.get_default().set_property("gtk-icon-theme-name", "default-icon-theme")
+# gtk-icon-theme-name
+# default-icon-theme
+
+class TrayIcon(Gtk.StatusIcon):
+    def __init__(self):
+        Gtk.StatusIcon.__init__(self)
+        self.set_from_icon_name('software-update-urgent')
+        self.set_tooltip_text("Tray Update")
+        self.set_has_tooltip(True)
+        self.set_visible(True)
+        self.connect("popup_menu", self.on_secondary_click) # TODO: rename?
+        self.connect("activate", self.on_primary_click)
+
+    def on_secondary_click(self, widget, button, time):
+        menu = Gtk.Menu()
+
+        menu_item1 = Gtk.MenuItem("Update")
+        menu.append(menu_item1)
+        menu_item1.connect("activate", self.on_primary_click)
+
+        menu_item2 = Gtk.MenuItem("Quit")
+        menu.append(menu_item2)
+        menu_item2.connect("activate", Gtk.main_quit)
+
+        menu.show_all()
+        menu.popup(None, None, None, self, 3, time)
+
+    def on_primary_click(self, widget):
+        call(SUBPROCESS_CALL, shell=True)
+
+
+if __name__ == '__main__':
+    Gtk.Settings.get_default().set_property("gtk-icon-theme-name", "default-icon-theme")
+    tray = TrayIcon()
+    Gtk.main()
+
